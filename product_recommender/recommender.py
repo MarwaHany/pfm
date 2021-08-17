@@ -1,7 +1,13 @@
+
+"""
+Code based on BreakfastPirate Forum post
+__author__ : SRK
+"""
 import csv
 import datetime
 from operator import sub
 import numpy as np
+import os
 import pandas as pd
 import xgboost as xgb
 from sklearn import preprocessing, ensemble
@@ -150,10 +156,27 @@ def runXGB(train_X, train_y, seed_val=0):
 	model = xgb.train(plst, xgtrain, num_rounds)	
 	return model
 
+def process_input_data(test_file_path, cust_dict, input_data):
+	""" this function is added to edit on the test.csv file
+	depending on the data sent in the coming request and return 
+	the processData() value back to the predict function.
+	"""
+	test_file = open(test_file_path + "test_ver2.csv")
+	try:
+		with open(test_file, 'w') as csvfile:
+			writer = csv.DictWriter(csvfile, fieldnames=cat_cols)
+			writer.writeheader()
+			for data in input_data:
+				writer.writerow(data)
+		test_file.close()
+	except IOError: 
+		print("I/O error")
+	return processData(test_file, cust_dict)
 
-if __name__ == "__main__":
+def predict(input_data):
 	start_time = datetime.datetime.now()
-	data_path = "../input/"
+	data_path = "input/"
+	test_file_path = "input/test_ver2.csv"
 	train_file =  open(data_path + "train_ver2.csv")
 	x_vars_list, y_vars_list, cust_dict = processData(train_file, {})
 	train_X = np.array(x_vars_list)
@@ -163,14 +186,12 @@ if __name__ == "__main__":
 	train_file.close()
 	print(train_X.shape, train_y.shape)
 	print(datetime.datetime.now()-start_time)
-	test_file = open(data_path + "test_ver2.csv")
-	x_vars_list, y_vars_list, cust_dict = processData(test_file, cust_dict)
+	# Process the input data
+	x_vars_list, y_vars_list, cust_dict = process_input_data(test_file_path, cust_dict, input_data)
 	test_X = np.array(x_vars_list)
 	del x_vars_list
-	test_file.close()
 	print(test_X.shape)
 	print(datetime.datetime.now()-start_time)
-
 	print("Building model..")
 	model = runXGB(train_X, train_y, seed_val=0)
 	del train_X, train_y
@@ -189,3 +210,5 @@ if __name__ == "__main__":
 	out_df = pd.DataFrame({'ncodpers':test_id, 'added_products':final_preds})
 	out_df.to_csv('sub_xgb_new.csv', index=False)
 	print(datetime.datetime.now()-start_time)
+
+	return {'ncodpers':test_id, 'added_products':final_preds}
