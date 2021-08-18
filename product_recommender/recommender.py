@@ -134,7 +134,6 @@ def processData(in_file_name, cust_dict):
 						assert len(prev_target_list) == 22
 						x_vars_list.append(x_vars+prev_target_list)
 						y_vars_list.append(ind)
-
 	return x_vars_list, y_vars_list, cust_dict
 			
 def runXGB(train_X, train_y, seed_val=0):
@@ -156,27 +155,29 @@ def runXGB(train_X, train_y, seed_val=0):
 	model = xgb.train(plst, xgtrain, num_rounds)	
 	return model
 
-def process_input_data(test_file_path, cust_dict, input_data):
+def update_test_file(test_file_path, input_data):
 	""" this function is added to edit on the test.csv file
 	depending on the data sent in the coming request and return 
 	the processData() value back to the predict function.
 	"""
-	test_file = open(test_file_path + "test_ver2.csv")
+	test_cols =["fecha_dato","ncodpers","ind_empleado","pais_residencia","sexo","age",
+				"fecha_alta","ind_nuevo","antiguedad","indrel","ult_fec_cli_1t","indrel_1mes",
+				"tiprel_1mes","indresi","indext","conyuemp","canal_entrada","indfall","tipodom",
+				"cod_prov","nomprov","ind_actividad_cliente","renta","segmento"]
 	try:
-		with open(test_file, 'w') as csvfile:
-			writer = csv.DictWriter(csvfile, fieldnames=cat_cols)
-			writer.writeheader()
+		with open(test_file_path, 'w') as csvfile:
+			headerwriter = csv.DictWriter(csvfile, fieldnames=test_cols, quoting=csv.QUOTE_ALL, quotechar='"')
+			datawriter = csv.DictWriter(csvfile, fieldnames=test_cols)
+			headerwriter.writeheader()
 			for data in input_data:
-				writer.writerow(data)
-		test_file.close()
+				datawriter.writerow(data)
 	except IOError: 
 		print("I/O error")
-	return processData(test_file, cust_dict)
 
 def predict(input_data):
+	global target_cols # this line is added as we are going to update a global variable
 	start_time = datetime.datetime.now()
 	data_path = "input/"
-	test_file_path = "input/test_ver2.csv"
 	train_file =  open(data_path + "train_ver2.csv")
 	x_vars_list, y_vars_list, cust_dict = processData(train_file, {})
 	train_X = np.array(x_vars_list)
@@ -186,10 +187,15 @@ def predict(input_data):
 	train_file.close()
 	print(train_X.shape, train_y.shape)
 	print(datetime.datetime.now()-start_time)
-	# Process the input data
-	x_vars_list, y_vars_list, cust_dict = process_input_data(test_file_path, cust_dict, input_data)
+
+	# Update the test file with the input data
+	print("Updating the test file..")
+	update_test_file(data_path + "test_ver2.csv", input_data)
+	test_file = open(data_path + "test_ver2.csv")
+	x_vars_list, y_vars_list, cust_dict = processData(test_file, cust_dict)
 	test_X = np.array(x_vars_list)
 	del x_vars_list
+	test_file.close()
 	print(test_X.shape)
 	print(datetime.datetime.now()-start_time)
 	print("Building model..")
@@ -210,5 +216,4 @@ def predict(input_data):
 	out_df = pd.DataFrame({'ncodpers':test_id, 'added_products':final_preds})
 	out_df.to_csv('sub_xgb_new.csv', index=False)
 	print(datetime.datetime.now()-start_time)
-
-	return {'ncodpers':test_id, 'added_products':final_preds}
+	return {'ncodpers':test_id.tolist(), 'added_products':final_preds}
