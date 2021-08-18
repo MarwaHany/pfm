@@ -14,6 +14,5 @@ def health():
 def get_recommended_products():
     if request.method == 'POST':
         input_data = request.get_json()
-        print(input_data)
-        predictions = predict(input_data)
-        return jsonify({'predictions': predictions})
+        predictions = predict([input_data])
+        return {'predictions': predictions}
