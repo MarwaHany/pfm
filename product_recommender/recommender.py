@@ -178,7 +178,7 @@ def predict(input_data):
 	global target_cols # this line is added as we are going to update a global variable
 	start_time = datetime.datetime.now()
 	data_path = "input/"
-	train_file =  open(data_path + "train_ver2.csv")
+	train_file =  open(data_path + "train_data.csv")
 	x_vars_list, y_vars_list, cust_dict = processData(train_file, {})
 	train_X = np.array(x_vars_list)
 	train_y = np.array(y_vars_list)
@@ -190,8 +190,8 @@ def predict(input_data):
 
 	# Update the test file with the input data
 	print("Updating the test file..")
-	update_test_file(data_path + "test_ver2.csv", input_data)
-	test_file = open(data_path + "test_ver2.csv")
+	update_test_file(data_path + "input_data.csv", input_data)
+	test_file = open(data_path + "input_data.csv")
 	x_vars_list, y_vars_list, cust_dict = processData(test_file, cust_dict)
 	test_X = np.array(x_vars_list)
 	del x_vars_list
@@ -211,9 +211,9 @@ def predict(input_data):
 	target_cols = np.array(target_cols)
 	preds = np.argsort(preds, axis=1)
 	preds = np.fliplr(preds)[:,:7]
-	test_id = np.array(pd.read_csv(data_path + "test_ver2.csv", usecols=['ncodpers'])['ncodpers'])
+	test_id = np.array(pd.read_csv(data_path + "input_data.csv", usecols=['ncodpers'])['ncodpers'])
 	final_preds = [" ".join(list(target_cols[pred])) for pred in preds]
 	out_df = pd.DataFrame({'ncodpers':test_id, 'added_products':final_preds})
-	out_df.to_csv('sub_xgb_new.csv', index=False)
+	out_df.to_csv('result_data.csv', index=False)
 	print(datetime.datetime.now()-start_time)
 	return {'ncodpers':test_id.tolist(), 'added_products':final_preds}

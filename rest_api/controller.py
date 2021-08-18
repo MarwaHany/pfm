@@ -1,5 +1,4 @@
-import pandas as pd
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from product_recommender.recommender import predict
 
 
